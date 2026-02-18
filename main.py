@@ -1,4 +1,3 @@
-
 import os
 import requests
 import pandas as pd
@@ -163,9 +162,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = f"{symbol} Tier 1 Analysis\n"
     for tf, data in results.items():
         message += f"\n{tf}\nDirection: {data['direction']}\nEntry: {data['entry']}\nTP1: {data['tp1']}\nTP2: {data['tp2']}\nSL: {data['sl']}\nConfidence: {data['confidence']}%\nModel Accuracy: {data['accuracy']}%\n"
-    keyboard = [[InlineKeyboardButton(p, callback_data=p)] for p in PAIRS]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.message.reply_text(message, reply_markup=reply_markup)
+    await query.message.reply_text(message)
 
 def main():
     init_db()
