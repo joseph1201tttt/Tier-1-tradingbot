@@ -1,0 +1,7 @@
+pandas
+numpy
+requests
+ta
+joblib
+scikit-learn
+python-telegram-bot==20.5
