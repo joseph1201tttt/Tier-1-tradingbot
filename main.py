@@ -11,8 +11,8 @@ from sklearn.preprocessing import StandardScaler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 
-TOKEN ="8449970757:AAFKmZSvQ_ka3hnrgCjQzDkIphkvT34Yyu4"
-TWELVE_DATA_API_KEY ="33aec99f37d24aab8428cf43d5e58f8b"
+TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+TWELVE_DATA_API_KEY ="8237062025:AAFv6__wBeZDmur8kcEHVjKIQblbwmK-lWY" "33aec99f37d24aab8428cf43d5e58f8b"
 
 PAIRS = {
     "XAUUSD": "XAU/USD",
@@ -72,10 +72,10 @@ def indicators(df):
     df["ADX"]=ta.trend.adx(df["High"],df["Low"],df["Close"],14)
     df["CCI"]=ta.trend.cci(df["High"],df["Low"],df["Close"],14)
     df["STOCH"]=ta.momentum.stoch(df["High"],df["Low"],df["Close"])
-    df.dropna(inplace=True)
-    return df
+    return df.iloc[210:]
 
 def market_structure(df):
+    if len(df)<3:return 0
     hh=df["High"].iloc[-1]>df["High"].iloc[-2]
     hl=df["Low"].iloc[-1]>df["Low"].iloc[-2]
     lh=df["High"].iloc[-1]<df["High"].iloc[-2]
@@ -85,19 +85,19 @@ def market_structure(df):
     return 0
 
 def bos(df):
+    if len(df)<5:return 0
     return 1 if df["Close"].iloc[-1]>df["High"].iloc[-3] else -1 if df["Close"].iloc[-1]<df["Low"].iloc[-3] else 0
 
 def engulfing(df):
+    if len(df)<3:return 0
     prev=df.iloc[-2];cur=df.iloc[-1]
     if cur["Close"]>cur["Open"] and prev["Close"]<prev["Open"] and cur["Close"]>prev["Open"] and cur["Open"]<prev["Close"]:return 1
     if cur["Close"]<cur["Open"] and prev["Close"]>prev["Open"] and cur["Open"]>prev["Close"] and cur["Close"]<prev["Open"]:return -1
     return 0
 
 def liquidity(df):
+    if len(df)<6:return 0
     return 1 if df["High"].iloc[-1]>df["High"].iloc[-5] else -1 if df["Low"].iloc[-1]<df["Low"].iloc[-5] else 0
-
-def sr(df):
-    return df["Low"].tail(20).min(),df["High"].tail(20).max()
 
 def features(df):
     s=market_structure(df)
@@ -126,8 +126,11 @@ def tp_levels(symbol,entry,dir):
 
 def analyze(df,symbol):
     df=indicators(df)
+    if len(df)<210:return "BUY",df["Close"].iloc[-1],0,0,0,0,np.zeros((1,15))
     f=features(df)
     init_model(f)
+    if not hasattr(model,"coef_"):
+        return "BUY",df["Close"].iloc[-1],0,0,0,0,f
     prob=model.predict_proba(scaler.transform(f))[0]
     direction="BUY" if prob[1]>0.55 else "SELL"
     entry=df["Close"].iloc[-1]
@@ -145,9 +148,11 @@ def update(df,f):
 
 def backtest(df):
     df=indicators(df)
+    if len(df)<210:return
     X=[];y=[]
-    for i in range(5,len(df)-1):
+    for i in range(210,len(df)-1):
         sub=df.iloc[:i]
+        if len(sub)<210:continue
         f=features(sub)
         X.append(f[0])
         y.append(1 if df["Close"].iloc[i+1]>df["Close"].iloc[i] else 0)
@@ -166,14 +171,12 @@ async def button(update:Update,context:ContextTypes.DEFAULT_TYPE):
     await q.answer()
     pair=q.data
     symbol=PAIRS[pair]
-    tb=0;ts=0;res=None;f=None;df_last=None
+    res=None;f=None;df_last=None
     for tf in TIMEFRAMES.values():
         df=get_data(symbol,tf)
         if df.empty or len(df)<50:continue
         backtest(df)
         d,e,sl,tp1,tp2,tp3,feat=analyze(df,symbol)
-        if d=="BUY":tb+=1
-        else:ts+=1
         res=(d,e,sl,tp1,tp2,tp3)
         f=feat
         df_last=df
