@@ -12,7 +12,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 
 TOKEN = "8237062025:AAFv6__wBeZDmur8kcEHVjKIQblbwmK-lWY"
-TWELVE_DATA_API_KEY ="
+TWELVE_DATA_API_KEY ="33aec99f37d24aab8428cf43d5e58f8b"
 
 PAIRS = {
     "XAUUSD": "XAU/USD",
